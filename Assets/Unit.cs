@@ -3,49 +3,61 @@ using System.Collections;
 
 public class PathFollower : MonoBehaviour
 {
-    public Transform destination;
+    public Transform target;
+
     public Color pathColor;
 
-    public float movementSpeed = 10;
+    public float iAmSpeed = 10;
 
     private Vector3[] pathPoints;
 
-    private int currentTargetIndex;
+    private int index;
 
     private void Start()
     {
-        PathRequestManager.RequestPath(transform.position, destination.position, OnPathFound);
+        PathRequestManager.RequestPath(transform.position, target.position,
+                                         OnPathFound);
     }
 
-    public void OnPathFound(Vector3[] newPath, bool pathSuccessful)
+    public void OnPathFound(Vector3[] newPath, bool flag)
     {
-        if (pathSuccessful)
+        if (flag)
         {
+            index = 0;
+            
             pathPoints = newPath;
-            currentTargetIndex = 0;
+            
             StopCoroutine("FollowPath");
+            
             StartCoroutine("FollowPath");
         }
     }
 
     IEnumerator FollowPath()
     {
-        Vector3 currentWaypoint = pathPoints[0];
+        Vector3 current = pathPoints[0];
+
         while (true)
         {
-            if (transform.position == currentWaypoint)
+            if (transform.position == current)
             {
-                currentTargetIndex++;
-                if (currentTargetIndex >= pathPoints.Length)
+                ++ index;
+
+                if (index - pathPoints.Length >= 0)
                 {
-                    currentTargetIndex = 0;
+                    index = 0;
+
                     pathPoints = new Vector3[0];
+                    
                     yield break;
                 }
-                currentWaypoint = pathPoints[currentTargetIndex];
+
+                current = pathPoints[index];
             }
 
-            transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, movementSpeed * Time.deltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, current,
+                                iAmSpeed * Time.deltaTime);
+
             yield return null;
         }
     }
@@ -54,13 +66,13 @@ public class PathFollower : MonoBehaviour
     {
         if (pathPoints != null)
         {
-            for (int i = currentTargetIndex; i < pathPoints.Length; i++)
+            for (int i = index; i < pathPoints.Length; ++ i)
             {
                 Gizmos.color = pathColor;
 
                 Gizmos.DrawCube(pathPoints[i], Vector3.one);
 
-                if (i == currentTargetIndex)
+                if (i == index)
                 {
                     Gizmos.DrawLine(transform.position, pathPoints[i]);
                 }
